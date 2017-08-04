@@ -35,7 +35,7 @@ public class LineCountLambda {
      .apply(Count.<String>globally())
 		 .apply(MapElements.into(TypeDescriptors.strings())
 			                 .via((Long count) -> Long.toString(count)))
-     .apply(TextIO.write().to("wordcounts"));
+     .apply(TextIO.write().to("linecount"));
 
     p.run().waitUntilFinish();
   }

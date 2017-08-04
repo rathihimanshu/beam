@@ -38,7 +38,7 @@ public class LineCount {
                          return Long.toString(input);
                        }
                      }))
-     .apply(TextIO.write().to("wordcounts"));
+     .apply(TextIO.write().to("linecount"));
 
     p.run().waitUntilFinish();
   }

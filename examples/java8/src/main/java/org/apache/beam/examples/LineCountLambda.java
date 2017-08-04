@@ -34,7 +34,7 @@ public class LineCountLambda {
     p.apply(TextIO.read().from("gs://dataflow-samples/shakespeare/kinglear.txt"))
      .apply(Count.<String>globally())
      .apply(MapElements.into(TypeDescriptors.strings())
-                       .via((Long count) -> Long.toString(count)))
+         .via((Long count) -> Long.toString(count)))
      .apply(TextIO.write().to("linecount"));
 
     p.run().waitUntilFinish();

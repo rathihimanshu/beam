@@ -28,16 +28,16 @@ import org.apache.beam.sdk.transforms.SimpleFunction;
 public class LineCount {
 
   public static void main(String[] args) {
-      PipelineOptions options = PipelineOptionsFactory.create();
-      Pipeline p = Pipeline.create(options);
+    PipelineOptions options = PipelineOptionsFactory.create();
+    Pipeline p = Pipeline.create(options);
 
-      p.apply(TextIO.read().from("gs://dataflow-samples/shakespeare/kinglear.txt"))
-       .apply(Count.<String>globally())
-       .apply(MapElements.via(new SimpleFunction<Long, String>() {
-           public String apply(Long input) {
-               return Long.toString(input);
-           }
-       }))
+    p.apply(TextIO.read().from("gs://dataflow-samples/shakespeare/kinglear.txt"))
+     .apply(Count.<String>globally())
+     .apply(MapElements.via(new SimpleFunction<Long, String>() {
+         public String apply(Long input) {
+             return Long.toString(input);
+         }
+     }))
      .apply(TextIO.write().to("linecount"));
 
     p.run().waitUntilFinish();

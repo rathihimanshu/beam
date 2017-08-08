@@ -15,12 +15,13 @@ gsutil cat gs://dataflow-samples/shakespeare/kinglear.txt | wc
 
 ### Deploying a Pipeline on Cloud Dataflow
 ```
+cd ~/beam/examples/java8
 PROJECT=[Your Project ID]
 BUCKET=gs://dataflow-$PROJECT
 gsutil mb $BUCKET
 ```
 ```
-mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCountLambda \
+mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCount \
   -Dexec.args="--project=$PROJECT \
   --stagingLocation=$BUCKET/staging/ \
   --output=$BUCKET/output \

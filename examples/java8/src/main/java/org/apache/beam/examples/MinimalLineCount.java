@@ -25,7 +25,7 @@ import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 
-public class MinimalLineCountLambda {
+public class MinimalLineCount {
 
   public static void main(String[] args) {
     PipelineOptions options = PipelineOptionsFactory.create();

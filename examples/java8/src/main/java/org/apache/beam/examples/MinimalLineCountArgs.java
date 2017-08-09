@@ -23,7 +23,7 @@ import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.values.TypeDescriptors;
 
 public class MinimalLineCountArgs {
 
@@ -33,11 +33,8 @@ public class MinimalLineCountArgs {
 
     p.apply(TextIO.read().from("gs://dataflow-samples/shakespeare/kinglear.txt"))
      .apply(Count.<String>globally())
-     .apply(MapElements.via(new SimpleFunction<Long, String>() {
-         public String apply(Long input) {
-             return Long.toString(input);
-         }
-     }))
+	   .apply(MapElements.into(TypeDescriptors.strings())
+	       .via((Long count) -> Long.toString(count)))
      .apply(TextIO.write().to("linecount"));
 
     p.run().waitUntilFinish();

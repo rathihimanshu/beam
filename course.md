@@ -7,7 +7,7 @@ Transforms: https://beam.apache.org/documentation/sdks/javadoc/2.0.0/org/apache/
 
 ```
 cd beam/examples/java8
-mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCount
+mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.MinimalLineCount
 ```
 ```
 gsutil cat gs://dataflow-samples/shakespeare/kinglear.txt | wc
@@ -21,10 +21,16 @@ BUCKET=gs://dataflow-$PROJECT
 gsutil mb $BUCKET
 ```
 ```
+mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.MinimalLineCountArgs \
+  -Dexec.args="--runner=DataflowRunner \
+  --project=$PROJECT \
+  --tempLocation=$BUCKET/temp"
+```
+```
 mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCount \
-  -Dexec.args="--project=$PROJECT \
-  --stagingLocation=$BUCKET/staging/ \
+  -Dexec.args="--runner=DataflowRunner \
+  --project=$PROJECT \
+  --tempLocation=$BUCKET/temp \
   --output=$BUCKET/output \
-  --runner=DataflowRunner \
   --jobName=linecount1"
 ```

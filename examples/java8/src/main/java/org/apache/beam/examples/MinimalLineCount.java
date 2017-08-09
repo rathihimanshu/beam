@@ -19,47 +19,26 @@ package org.apache.beam.examples;
 
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
-import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.options.Validation.Required;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.values.TypeDescriptors;
+import org.apache.beam.sdk.transforms.SimpleFunction;
 
-public class LineCount {
-
-  public interface LineCountOptions extends PipelineOptions {
-
-    /**
-     * By default, this example reads from a public dataset containing the text of
-     * King Lear. Set this option to choose a different input file or glob.
-     */
-    @Description("Path of the file to read from")
-    @Default.String("gs://apache-beam-samples/shakespeare/kinglear.txt")
-    String getInputFile();
-    void setInputFile(String value);
-
-    /**
-     * Set this required option to specify where to write the output.
-     */
-    @Description("Path of the file to write to")
-    @Required
-    String getOutput();
-    void setOutput(String value);
-  }
+public class MinimalLineCountLambda {
 
   public static void main(String[] args) {
-    LineCountOptions options = PipelineOptionsFactory.fromArgs(args).withValidation()
-			  .as(LineCountOptions.class);
+    PipelineOptions options = PipelineOptionsFactory.create();
     Pipeline p = Pipeline.create(options);
 
-    p.apply(TextIO.read().from(options.getInputFile()))
+    p.apply(TextIO.read().from("gs://dataflow-samples/shakespeare/kinglear.txt"))
      .apply(Count.<String>globally())
-     .apply(MapElements.into(TypeDescriptors.strings())
-         .via((Long count) -> Long.toString(count)))
-     .apply(TextIO.write().to(options.getOutput()));
+     .apply(MapElements.via(new SimpleFunction<Long, String>() {
+         public String apply(Long input) {
+             return Long.toString(input);
+         }
+     }))
+     .apply(TextIO.write().to("linecount"));
 
     p.run().waitUntilFinish();
   }

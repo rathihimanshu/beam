@@ -39,3 +39,15 @@ mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCount \
 cd ~/beam/examples/java
 mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.MinimalWordCount
 ```
+
+### Composite Transforms
+```
+cd ~/beam/examples/java8
+```
+```
+mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.complete.game.UserScore \
+-Dexec.args="--runner=DataflowRunner \
+  --project=$PROJECT \
+  --tempLocation=$BUCKET/temp/ \
+  --output=$BUCKET/scores"
+```

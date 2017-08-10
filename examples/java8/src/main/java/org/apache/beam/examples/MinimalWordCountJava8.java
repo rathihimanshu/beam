@@ -31,7 +31,7 @@ import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.beam.examples.common.ExampleUtils;
 
 /**
- * An example that counts words in Shakespeare, using Java 8 language features.
+ * An example that counts words in King Lear, using Java 8 language features.
  *
  * <p>See {@link MinimalWordCount} for a comprehensive explanation.
  */

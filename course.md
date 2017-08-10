@@ -31,5 +31,5 @@ mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCount \
   -Dexec.args="--runner=DataflowRunner \
   --project=$PROJECT \
   --tempLocation=$BUCKET/temp \
-  --output=$BUCKET/output"
+  --output=$BUCKET/linecount"
 ```

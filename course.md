@@ -51,3 +51,40 @@ mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.complete.game.Us
   --tempLocation=$BUCKET/temp/ \
   --output=$BUCKET/scores"
 ```
+
+### Windowing
+```
+mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.complete.game.HourlyTeamScore \
+-Dexec.args="--runner=DataflowRunner \
+  --project=$PROJECT \
+  --tempLocation=$BUCKET/temp/ \
+  --output=$BUCKET/scores \
+  --startMin=2015-11-16-16-00 \
+  --stopMin=2015-11-17-16-00"
+```
+
+### Running LeaderBoard
+```
+bq mk game
+```
+API Console Credentials: https://console.developers.google.com/projectselector/apis/credentials
+```
+export GOOGLE_APPLICATION_CREDENTIALS="[Path]/[Credentials file]"
+cd ~/beam/examples/java8
+```
+```
+mvn compile exec:java  -Dexec.mainClass=org.apache.beam.examples.complete.game.injector.Injector \
+-Dexec.args="$PROJECT game none"
+```
+```
+cd ~/beam/examples/java8
+```
+```
+mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.complete.game.LeaderBoard \
+-Dexec.args="--runner=DataflowRunner \
+  --project=$PROJECT \
+  --tempLocation=$BUCKET/temp/ \
+  --output=$BUCKET/leaderboard \
+  --dataset=game \
+  --topic=projects/$PROJECT/topics/game"
+```

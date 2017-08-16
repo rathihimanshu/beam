@@ -1,7 +1,7 @@
 # Introduction to Google Cloud Dataflow
 This file contains text you can copy and paste for the examples in Cloud Academy's _Introduction to Google Cloud Dataflow_ course.  
 
-### Deploying a Pipeline Locally
+### Building and Running a Pipeline
 Installing on your own computer: https://cloud.google.com/dataflow/docs/quickstarts  
 Transforms: https://beam.apache.org/documentation/sdks/javadoc/2.0.0/org/apache/beam/sdk/transforms/package-summary.html
 

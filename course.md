@@ -15,10 +15,11 @@ gsutil cat gs://dataflow-samples/shakespeare/kinglear.txt | wc
 
 ### Deploying a Pipeline on Cloud Dataflow
 ```
-cd ~/beam/examples/java8
-PROJECT=[Your Project ID]
-BUCKET=gs://dataflow-$PROJECT
+nano .profile
+    PROJECT=[Your Project ID]
+    BUCKET=gs://dataflow-$PROJECT
 gsutil mb $BUCKET
+cd ~/beam/examples/java8
 ```
 ```
 mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.MinimalLineCountArgs \
@@ -53,6 +54,9 @@ mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.complete.game.Us
 ```
 
 ### Windowing
+```
+cd ~/beam/examples/java8
+```
 ```
 mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.complete.game.HourlyTeamScore \
 -Dexec.args="--runner=DataflowRunner \

@@ -37,6 +37,9 @@ mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.LineCount \
 
 ### Custom Transforms
 ```
+cd ~/beam/examples/java8
+```
+```
 mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.MinimalWordCount \
   -Dexec.args="--runner=DataflowRunner \
   --project=$PROJECT \

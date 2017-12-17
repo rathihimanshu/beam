@@ -16,7 +16,7 @@ gsutil cat gs://dataflow-samples/shakespeare/kinglear.txt | wc
 
 ### Deploying a Pipeline on Cloud Dataflow
 ```
-nano .profile
+nano ~/.profile
     PROJECT=[Your Project ID]
     BUCKET=gs://dataflow-$PROJECT
 gsutil mb $BUCKET

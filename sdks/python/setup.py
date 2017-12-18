@@ -68,7 +68,7 @@ if StrictVersion(_PIP_VERSION) < StrictVersion(REQUIRED_PIP_VERSION):
   )
 
 
-REQUIRED_CYTHON_VERSION = '0.23.2'
+REQUIRED_CYTHON_VERSION = '0.26.1'
 try:
   _CYTHON_VERSION = get_distribution('cython').version
   if StrictVersion(_CYTHON_VERSION) < StrictVersion(REQUIRED_CYTHON_VERSION):
@@ -98,12 +98,20 @@ REQUIRED_PACKAGES = [
     'avro>=1.8.1,<2.0.0',
     'crcmod>=1.7,<2.0',
     'dill==0.2.6',
-    'grpcio>=1.0,<2.0',
+    # grpcio 1.8.1 requires protobuf >= 3.5
+    # TODO(BEAM-3357): Remove the upper bound.
+    'grpcio>=1.0,<=1.7.3',
     'httplib2>=0.8,<0.10',
     'mock>=1.0.1,<3.0.0',
     'oauth2client>=2.0.1,<4.0.0',
     'protobuf>=3.2.0,<=3.3.0',
     'pyyaml>=3.12,<4.0.0',
+    'pyvcf>=0.6.8,<0.7.0',
+    # Six 1.11.0 incompatible with apitools.
+    # TODO(BEAM-2964): Remove the upper bound.
+    'six>=1.9,<1.11',
+    'typing>=3.6.0,<3.7.0',
+    'futures>=3.1.1,<4.0.0',
     ]
 
 REQUIRED_SETUP_PACKAGES = [
@@ -112,8 +120,6 @@ REQUIRED_SETUP_PACKAGES = [
 
 REQUIRED_TEST_PACKAGES = [
     'pyhamcrest>=1.9,<2.0',
-    # Six required by nose plugins management.
-    'six>=1.9',
     ]
 
 GCP_REQUIREMENTS = [
@@ -153,7 +159,7 @@ setuptools.setup(
     author_email=PACKAGE_EMAIL,
     packages=setuptools.find_packages(),
     package_data={'apache_beam': [
-        '*/*.pyx', '*/*/*.pyx', '*/*.pxd', '*/*/*.pxd', 'testing/data/*']},
+        '*/*.pyx', '*/*/*.pyx', '*/*.pxd', '*/*/*.pxd', 'testing/data/*.yaml']},
     ext_modules=cythonize([
         'apache_beam/**/*.pyx',
         'apache_beam/coders/coder_impl.py',
@@ -168,6 +174,7 @@ setuptools.setup(
     ]),
     setup_requires=REQUIRED_SETUP_PACKAGES,
     install_requires=REQUIRED_PACKAGES,
+    python_requires='>=2.7,<3.0',
     test_suite='nose.collector',
     tests_require=REQUIRED_TEST_PACKAGES,
     extras_require={

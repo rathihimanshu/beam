@@ -91,6 +91,11 @@ public class UnboundedReadFromBoundedSource<T> extends PTransform<PBegin, PColle
   }
 
   @Override
+  protected Coder<T> getDefaultOutputCoder() {
+    return source.getDefaultOutputCoder();
+  }
+
+  @Override
   public String getKindString() {
     return String.format("Read(%s)", NameUtils.approximateSimpleName(source));
   }
@@ -133,10 +138,6 @@ public class UnboundedReadFromBoundedSource<T> extends PTransform<PBegin, PColle
         }
         List<? extends BoundedSource<T>> splits =
             boundedSource.split(desiredBundleSize, options);
-        if (splits == null) {
-          LOG.warn("BoundedSource cannot split {}, skips the initial splits.", boundedSource);
-          return ImmutableList.of(this);
-        }
         return Lists.transform(
             splits,
             new Function<BoundedSource<T>, BoundedToUnboundedSourceAdapter<T>>() {
@@ -161,14 +162,14 @@ public class UnboundedReadFromBoundedSource<T> extends PTransform<PBegin, PColle
     }
 
     @Override
-    public Coder<T> getOutputCoder() {
-      return boundedSource.getOutputCoder();
+    public Coder<T> getDefaultOutputCoder() {
+      return boundedSource.getDefaultOutputCoder();
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public Coder<Checkpoint<T>> getCheckpointMarkCoder() {
-      return new CheckpointCoder<>(boundedSource.getOutputCoder());
+      return new CheckpointCoder<>(boundedSource.getDefaultOutputCoder());
     }
 
     @VisibleForTesting
@@ -253,7 +254,8 @@ public class UnboundedReadFromBoundedSource<T> extends PTransform<PBegin, PColle
      */
     @VisibleForTesting
     class Reader extends UnboundedReader<T> {
-      private ResidualElements residualElements;
+      // Initialized in init()
+      private @Nullable ResidualElements residualElements;
       private @Nullable ResidualSource residualSource;
       private final PipelineOptions options;
       private boolean done;

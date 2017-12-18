@@ -524,12 +524,15 @@ public abstract class DoFn<InputT, OutputT> implements Serializable, HasDisplayD
    * <li>It must return {@code void}.
    * </ul>
    *
-   * <h2>Splittable DoFn's (WARNING: work in progress, do not use)</h2>
+   * <h2>Splittable DoFn's</h2>
    *
    * <p>A {@link DoFn} is <i>splittable</i> if its {@link ProcessElement} method has a parameter
    * whose type is a subtype of {@link RestrictionTracker}. This is an advanced feature and an
-   * overwhelming majority of users will never need to write a splittable {@link DoFn}. Right now
-   * the implementation of this feature is in progress and it's not ready for any use.
+   * overwhelming majority of users will never need to write a splittable {@link DoFn}.
+   *
+   * <p>Not all runners support Splittable DoFn. See the
+   * <a href="https://beam.apache.org/documentation/runners/capability-matrix/">capability
+   * matrix</a>.
    *
    * <p>See <a href="https://s.apache.org/splittable-do-fn">the proposal</a> for an overview of the
    * involved concepts (<i>splittable DoFn</i>, <i>restriction</i>, <i>restriction tracker</i>).
@@ -558,13 +561,34 @@ public abstract class DoFn<InputT, OutputT> implements Serializable, HasDisplayD
    * </ul>
    *
    * <p>A non-splittable {@link DoFn} <i>must not</i> define any of these methods.
-   *
-   * <p>More documentation will be added when the feature becomes ready for general usage.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)
   public @interface ProcessElement {}
+
+  /**
+   * <b><i>Experimental - no backwards compatibility guarantees. The exact name or usage of this
+   * feature may change.</i></b>
+   *
+   * <p>Annotation that may be added to a {@link ProcessElement} or {@link OnTimer} method to
+   * indicate that the runner must ensure that the observable contents of the input {@link
+   * PCollection} or mutable state must be stable upon retries.
+   *
+   * <p>This is important for sinks, which must ensure exactly-once semantics when writing to a
+   * storage medium outside of your pipeline. A general pattern for a basic sink is to write a
+   * {@link DoFn} that can perform an idempotent write, and annotate that it requires stable input.
+   * Combined, these allow the write to be freely retried until success.
+   *
+   * <p>An example of an unstable input would be anything computed using nondeterministic logic. In
+   * Beam, any user-defined function is permitted to be nondeterministic, and any {@link
+   * PCollection} is permitted to be recomputed in any manner.
+   */
+  @Documented
+  @Experimental
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  public @interface RequiresStableInput {}
 
   /**
    * Annotation for the method to use to finish processing a batch of elements.

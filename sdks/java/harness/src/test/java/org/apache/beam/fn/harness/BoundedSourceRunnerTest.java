@@ -28,20 +28,19 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.ServiceLoader;
 import org.apache.beam.fn.harness.PTransformRunnerFactory.Registrar;
-import org.apache.beam.fn.harness.fn.ThrowingConsumer;
+import org.apache.beam.fn.harness.control.ProcessBundleHandler;
 import org.apache.beam.fn.harness.fn.ThrowingRunnable;
-import org.apache.beam.sdk.common.runner.v1.RunnerApi;
+import org.apache.beam.model.pipeline.v1.RunnerApi;
+import org.apache.beam.sdk.fn.data.FnDataReceiver;
 import org.apache.beam.sdk.io.BoundedSource;
 import org.apache.beam.sdk.io.CountingSource;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -63,7 +62,7 @@ public class BoundedSourceRunnerTest {
   public void testRunReadLoopWithMultipleSources() throws Exception {
     List<WindowedValue<Long>> out1Values = new ArrayList<>();
     List<WindowedValue<Long>> out2Values = new ArrayList<>();
-    Collection<ThrowingConsumer<WindowedValue<Long>>> consumers =
+    Collection<FnDataReceiver<WindowedValue<Long>>> consumers =
         ImmutableList.of(out1Values::add, out2Values::add);
 
     BoundedSourceRunner<BoundedSource<Long>, Long> runner = new BoundedSourceRunner<>(
@@ -83,7 +82,7 @@ public class BoundedSourceRunnerTest {
   @Test
   public void testRunReadLoopWithEmptySource() throws Exception {
     List<WindowedValue<Long>> outValues = new ArrayList<>();
-    Collection<ThrowingConsumer<WindowedValue<Long>>> consumers =
+    Collection<FnDataReceiver<WindowedValue<Long>>> consumers =
         ImmutableList.of(outValues::add);
 
     BoundedSourceRunner<BoundedSource<Long>, Long> runner = new BoundedSourceRunner<>(
@@ -99,7 +98,7 @@ public class BoundedSourceRunnerTest {
   @Test
   public void testStart() throws Exception {
     List<WindowedValue<Long>> outValues = new ArrayList<>();
-    Collection<ThrowingConsumer<WindowedValue<Long>>> consumers =
+    Collection<FnDataReceiver<WindowedValue<Long>>> consumers =
         ImmutableList.of(outValues::add);
 
     ByteString encodedSource =
@@ -107,8 +106,8 @@ public class BoundedSourceRunnerTest {
 
     BoundedSourceRunner<BoundedSource<Long>, Long> runner = new BoundedSourceRunner<>(
         PipelineOptionsFactory.create(),
-        RunnerApi.FunctionSpec.newBuilder().setParameter(
-            Any.pack(BytesValue.newBuilder().setValue(encodedSource).build())).build(),
+        RunnerApi.FunctionSpec.newBuilder()
+            .setUrn(ProcessBundleHandler.JAVA_SOURCE_URN).setPayload(encodedSource).build(),
         consumers);
 
     runner.start();
@@ -121,19 +120,18 @@ public class BoundedSourceRunnerTest {
   public void testCreatingAndProcessingSourceFromFactory() throws Exception {
     List<WindowedValue<String>> outputValues = new ArrayList<>();
 
-    Multimap<String, ThrowingConsumer<WindowedValue<?>>> consumers = HashMultimap.create();
+    Multimap<String, FnDataReceiver<WindowedValue<?>>> consumers = HashMultimap.create();
     consumers.put("outputPC",
-        (ThrowingConsumer) (ThrowingConsumer<WindowedValue<String>>) outputValues::add);
+        (FnDataReceiver) (FnDataReceiver<WindowedValue<String>>) outputValues::add);
     List<ThrowingRunnable> startFunctions = new ArrayList<>();
     List<ThrowingRunnable> finishFunctions = new ArrayList<>();
 
-    RunnerApi.FunctionSpec functionSpec = RunnerApi.FunctionSpec.newBuilder()
-        .setUrn("urn:org.apache.beam:source:java:0.1")
-        .setParameter(Any.pack(BytesValue.newBuilder()
-            .setValue(ByteString.copyFrom(
-                SerializableUtils.serializeToByteArray(CountingSource.upTo(3))))
-            .build()))
-        .build();
+    RunnerApi.FunctionSpec functionSpec =
+        RunnerApi.FunctionSpec.newBuilder()
+            .setUrn("urn:org.apache.beam:source:java:0.1")
+            .setPayload(
+                ByteString.copyFrom(SerializableUtils.serializeToByteArray(CountingSource.upTo(3))))
+            .build();
 
     RunnerApi.PTransform pTransform = RunnerApi.PTransform.newBuilder()
         .setSpec(functionSpec)
@@ -144,11 +142,13 @@ public class BoundedSourceRunnerTest {
     new BoundedSourceRunner.Factory<>().createRunnerForPTransform(
         PipelineOptionsFactory.create(),
         null /* beamFnDataClient */,
+        null /* beamFnStateClient */,
         "pTransformId",
         pTransform,
         Suppliers.ofInstance("57L")::get,
-        ImmutableMap.of(),
-        ImmutableMap.of(),
+        Collections.emptyMap(),
+        Collections.emptyMap(),
+        Collections.emptyMap(),
         consumers,
         startFunctions::add,
         finishFunctions::add);

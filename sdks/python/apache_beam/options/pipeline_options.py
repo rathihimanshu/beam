@@ -19,11 +19,10 @@
 
 import argparse
 
-from apache_beam.transforms.display import HasDisplayData
-from apache_beam.options.value_provider import StaticValueProvider
 from apache_beam.options.value_provider import RuntimeValueProvider
+from apache_beam.options.value_provider import StaticValueProvider
 from apache_beam.options.value_provider import ValueProvider
-
+from apache_beam.transforms.display import HasDisplayData
 
 __all__ = [
     'PipelineOptions',
@@ -51,7 +50,7 @@ def _static_value_provider_of(value_type):
 
   """
   def _f(value):
-    _f.func_name = value_type.__name__
+    _f.__name__ = value_type.__name__
     return StaticValueProvider(value_type, value)
   return _f
 
@@ -368,6 +367,13 @@ class GoogleCloudOptions(PipelineOptions):
     parser.add_argument('--template_location',
                         default=None,
                         help='Save job to specified local or GCS location.')
+    parser.add_argument(
+        '--label', '--labels',
+        dest='labels',
+        action='append',
+        default=None,
+        help='Labels that will be applied to this Dataflow job. Labels are key '
+        'value pairs separated by = (e.g. --label key=value).')
 
   def validate(self, validator):
     errors = []
@@ -589,11 +595,12 @@ class SetupOptions(PipelineOptions):
         default=None,
         help=
         ('Local path to a Python package file. The file is expected to be (1) '
-         'a package tarball (".tar") or (2) a compressed package tarball '
-         '(".tar.gz") which can be installed using the "pip install" command '
-         'of the standard pip package. Multiple --extra_package options can '
-         'be specified if more than one package is needed. During job '
-         'submission, the files will be staged in the staging area '
+         'a package tarball (".tar"), (2) a compressed package tarball '
+         '(".tar.gz"), (3) a Wheel file (".whl") or (4) a compressed package '
+         'zip file (".zip") which can be installed using the "pip install" '
+         'command  of the standard pip package. Multiple --extra_package '
+         'options can be specified if more than one package is needed. During '
+         'job submission, the files will be staged in the staging area '
          '(--staging_location option) and the workers will install them in '
          'same order they were specified on the command line.'))
 

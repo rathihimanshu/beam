@@ -31,19 +31,20 @@ from google.protobuf import wrappers_pb2
 import apache_beam as beam
 from apache_beam import typehints
 from apache_beam.metrics.execution import MetricsEnvironment
+from apache_beam.options.pipeline_options import DirectOptions
+from apache_beam.options.pipeline_options import StandardOptions
+from apache_beam.options.value_provider import RuntimeValueProvider
 from apache_beam.pvalue import PCollection
 from apache_beam.runners.direct.bundle_factory import BundleFactory
+from apache_beam.runners.direct.clock import RealClock
+from apache_beam.runners.direct.clock import TestClock
 from apache_beam.runners.runner import PipelineResult
 from apache_beam.runners.runner import PipelineRunner
 from apache_beam.runners.runner import PipelineState
 from apache_beam.runners.runner import PValueCache
-from apache_beam.transforms.ptransform import PTransform
 from apache_beam.transforms.core import _GroupAlsoByWindow
 from apache_beam.transforms.core import _GroupByKeyOnly
-from apache_beam.options.pipeline_options import DirectOptions
-from apache_beam.options.pipeline_options import StandardOptions
-from apache_beam.options.value_provider import RuntimeValueProvider
-
+from apache_beam.transforms.ptransform import PTransform
 
 __all__ = ['DirectRunner']
 
@@ -91,15 +92,14 @@ class DirectRunner(PipelineRunner):
   """Executes a single pipeline on the local machine."""
 
   # A list of PTransformOverride objects to be applied before running a pipeline
-  # using DirectRunner.
-  # Currently this only works for overrides where the input and output types do
-  # not change.
-  # For internal SDK use only. This should not be updated by Beam pipeline
-  # authors.
+  # using DirectRunner. Currently, this only works for overrides where the input
+  # and output types do not change.
+  # For internal use only; no backwards-compatibility guarantees.
   _PTRANSFORM_OVERRIDES = []
 
   def __init__(self):
     self._cache = None
+    self._use_test_clock = False  # use RealClock() in production
 
   def apply_CombinePerKey(self, transform, pcoll):
     # TODO: Move imports to top. Pipeline <-> Runner dependency cause problems
@@ -111,6 +111,10 @@ class DirectRunner(PipelineRunner):
           transform.fn, transform.args, transform.kwargs)
     except NotImplementedError:
       return transform.expand(pcoll)
+
+  def apply_TestStream(self, transform, pcoll):
+    self._use_test_clock = True  # use TestClock() for testing
+    return transform.expand(pcoll)
 
   def apply__GroupByKeyOnly(self, transform, pcoll):
     if (transform.__class__ == _GroupByKeyOnly and
@@ -205,6 +209,7 @@ class DirectRunner(PipelineRunner):
     self.consumer_tracking_visitor = ConsumerTrackingPipelineVisitor()
     pipeline.visit(self.consumer_tracking_visitor)
 
+    clock = TestClock() if self._use_test_clock else RealClock()
     evaluation_context = EvaluationContext(
         pipeline._options,
         BundleFactory(stacked=pipeline._options.view_as(DirectOptions)
@@ -212,7 +217,8 @@ class DirectRunner(PipelineRunner):
         self.consumer_tracking_visitor.root_transforms,
         self.consumer_tracking_visitor.value_to_consumers,
         self.consumer_tracking_visitor.step_names,
-        self.consumer_tracking_visitor.views)
+        self.consumer_tracking_visitor.views,
+        clock)
 
     evaluation_context.use_pvalue_cache(self._cache)
 
@@ -282,6 +288,16 @@ class DirectPipelineResult(PipelineResult):
     super(DirectPipelineResult, self).__init__(PipelineState.RUNNING)
     self._executor = executor
     self._evaluation_context = evaluation_context
+
+  def __del__(self):
+    if self._state == PipelineState.RUNNING:
+      logging.warning(
+          'The DirectPipelineResult is being garbage-collected while the '
+          'DirectRunner is still running the corresponding pipeline. This may '
+          'lead to incomplete execution of the pipeline if the main thread '
+          'exits before pipeline completion. Consider using '
+          'result.wait_until_finish() to wait for completion of pipeline '
+          'execution.')
 
   def _is_in_terminal_state(self):
     return self._state is not PipelineState.RUNNING

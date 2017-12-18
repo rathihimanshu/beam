@@ -16,7 +16,6 @@
 #
 
 """Generated message classes for dataflow version v1b3.
-
 Develops and executes data processing patterns like ETL, batch computation,
 and continuous computation.
 """
@@ -25,7 +24,6 @@ and continuous computation.
 from apitools.base.protorpclite import messages as _messages
 from apitools.base.py import encoding
 from apitools.base.py import extra_types
-
 
 package = 'dataflow'
 
@@ -242,7 +240,6 @@ class ComputationTopology(_messages.Message):
     outputs: The outputs from the computation.
     stateFamilies: The state family values.
     systemStageName: The system stage name.
-    userStageName: The user stage name.
   """
 
   computationId = _messages.StringField(1)
@@ -251,7 +248,6 @@ class ComputationTopology(_messages.Message):
   outputs = _messages.MessageField('StreamLocation', 4, repeated=True)
   stateFamilies = _messages.MessageField('StateFamilyConfig', 5, repeated=True)
   systemStageName = _messages.StringField(6)
-  userStageName = _messages.StringField(7)
 
 
 class ConcatPosition(_messages.Message):
@@ -350,11 +346,19 @@ class CounterStructuredName(_messages.Message):
       workers.
     executionStepName: Name of the stage. An execution step contains multiple
       component steps.
+    inputIndex: Index of an input collection that's being read from/written to
+      as a side input. The index identifies a step's side inputs starting by 1
+      (e.g. the first side input has input_index 1, the third has input_index
+      3). Side inputs are identified by a pair of (original_step_name,
+      input_index). This field helps uniquely identify them.
     name: Counter name. Not necessarily globally-unique, but unique within the
       context of the other fields. Required.
     origin: One of the standard Origins defined above.
     originNamespace: A string containing a more specific namespace of the
       counter's origin.
+    originalRequestingStepName: The step name requesting an operation, such as
+      GBK. I.e. the ParDo causing a read/write from shuffle to occur, or a
+      read from side inputs.
     originalStepName: System generated name of the original step in the user's
       graph, before optimization.
     portion: Portion of this counter, either key or value.
@@ -385,12 +389,14 @@ class CounterStructuredName(_messages.Message):
 
   componentStepName = _messages.StringField(1)
   executionStepName = _messages.StringField(2)
-  name = _messages.StringField(3)
-  origin = _messages.EnumField('OriginValueValuesEnum', 4)
-  originNamespace = _messages.StringField(5)
-  originalStepName = _messages.StringField(6)
-  portion = _messages.EnumField('PortionValueValuesEnum', 7)
-  workerId = _messages.StringField(8)
+  inputIndex = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  name = _messages.StringField(4)
+  origin = _messages.EnumField('OriginValueValuesEnum', 5)
+  originNamespace = _messages.StringField(6)
+  originalRequestingStepName = _messages.StringField(7)
+  originalStepName = _messages.StringField(8)
+  portion = _messages.EnumField('PortionValueValuesEnum', 9)
+  workerId = _messages.StringField(10)
 
 
 class CounterStructuredNameAndMetadata(_messages.Message):
@@ -520,6 +526,64 @@ class DataDiskAssignment(_messages.Message):
 
   dataDisks = _messages.StringField(1, repeated=True)
   vmInstance = _messages.StringField(2)
+
+
+class DataflowProjectsJobsAggregatedRequest(_messages.Message):
+  """A DataflowProjectsJobsAggregatedRequest object.
+
+  Enums:
+    FilterValueValuesEnum: The kind of filter to use.
+    ViewValueValuesEnum: Level of information requested in response. Default
+      is `JOB_VIEW_SUMMARY`.
+
+  Fields:
+    filter: The kind of filter to use.
+    location: The location that contains this job.
+    pageSize: If there are many jobs, limit response to at most this many. The
+      actual number of jobs returned will be the lesser of max_responses and
+      an unspecified server-defined limit.
+    pageToken: Set this to the 'next_page_token' field of a previous response
+      to request additional results in a long list.
+    projectId: The project which owns the jobs.
+    view: Level of information requested in response. Default is
+      `JOB_VIEW_SUMMARY`.
+  """
+
+  class FilterValueValuesEnum(_messages.Enum):
+    """The kind of filter to use.
+
+    Values:
+      UNKNOWN: <no description>
+      ALL: <no description>
+      TERMINATED: <no description>
+      ACTIVE: <no description>
+    """
+    UNKNOWN = 0
+    ALL = 1
+    TERMINATED = 2
+    ACTIVE = 3
+
+  class ViewValueValuesEnum(_messages.Enum):
+    """Level of information requested in response. Default is
+    `JOB_VIEW_SUMMARY`.
+
+    Values:
+      JOB_VIEW_UNKNOWN: <no description>
+      JOB_VIEW_SUMMARY: <no description>
+      JOB_VIEW_ALL: <no description>
+      JOB_VIEW_DESCRIPTION: <no description>
+    """
+    JOB_VIEW_UNKNOWN = 0
+    JOB_VIEW_SUMMARY = 1
+    JOB_VIEW_ALL = 2
+    JOB_VIEW_DESCRIPTION = 3
+
+  filter = _messages.EnumField('FilterValueValuesEnum', 1)
+  location = _messages.StringField(2)
+  pageSize = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  pageToken = _messages.StringField(4)
+  projectId = _messages.StringField(5, required=True)
+  view = _messages.EnumField('ViewValueValuesEnum', 6)
 
 
 class DataflowProjectsJobsCreateRequest(_messages.Message):
@@ -1346,8 +1410,7 @@ class DistributionUpdate(_messages.Message):
 
   Fields:
     count: The count of the number of elements present in the distribution.
-    logBuckets: (Optional) Logarithmic histogram of values. Each log may be in
-      no more than one bucket. Order does not matter.
+    histogram: (Optional) Histogram of value counts for the distribution.
     max: The maximum value present in the distribution.
     min: The minimum value present in the distribution.
     sum: Use an int64 since we'd prefer the added precision. If overflow is a
@@ -1357,7 +1420,7 @@ class DistributionUpdate(_messages.Message):
   """
 
   count = _messages.MessageField('SplitInt64', 1)
-  logBuckets = _messages.MessageField('LogBucket', 2, repeated=True)
+  histogram = _messages.MessageField('Histogram', 2)
   max = _messages.MessageField('SplitInt64', 3)
   min = _messages.MessageField('SplitInt64', 4)
   sum = _messages.MessageField('SplitInt64', 5)
@@ -1751,6 +1814,27 @@ class GetTemplateResponse(_messages.Message):
 
   metadata = _messages.MessageField('TemplateMetadata', 1)
   status = _messages.MessageField('Status', 2)
+
+
+class Histogram(_messages.Message):
+  """Histogram of value counts for a distribution.  Buckets have an inclusive
+  lower bound and exclusive upper bound and use "1,2,5 bucketing": The first
+  bucket range is from [0,1) and all subsequent bucket boundaries are powers
+  of ten multiplied by 1, 2, or 5. Thus, bucket boundaries are 0, 1, 2, 5, 10,
+  20, 50, 100, 200, 500, 1000, ... Negative values are not supported.
+
+  Fields:
+    bucketCounts: Counts of values in each bucket. For efficiency, prefix and
+      trailing buckets with count = 0 are elided. Buckets can store the full
+      range of values of an unsigned long, with ULLONG_MAX falling into the
+      59th bucket with range [1e19, 2e19).
+    firstBucketOffset: Starting index of first stored bucket. The non-
+      inclusive upper-bound of the ith bucket is given by:
+      pow(10,(i-first_bucket_offset)/3) * (1,2,5)[(i-first_bucket_offset)%3]
+  """
+
+  bucketCounts = _messages.IntegerField(1, repeated=True)
+  firstBucketOffset = _messages.IntegerField(2, variant=_messages.Variant.INT32)
 
 
 class InstructionInput(_messages.Message):
@@ -2438,20 +2522,6 @@ class ListJobsResponse(_messages.Message):
   nextPageToken = _messages.StringField(3)
 
 
-class LogBucket(_messages.Message):
-  """Bucket of values for Distribution's logarithmic histogram.
-
-  Fields:
-    count: Number of values in this bucket.
-    log: floor(log2(value)); defined to be zero for nonpositive values.
-      log(-1) = 0   log(0) = 0   log(1) = 0   log(2) = 1   log(3) = 1   log(4)
-      = 2   log(5) = 2
-  """
-
-  count = _messages.IntegerField(1)
-  log = _messages.IntegerField(2, variant=_messages.Variant.INT32)
-
-
 class MapTask(_messages.Message):
   """MapTask consists of an ordered set of instructions, each of which
   describes one particular low-level operation for the worker to perform in
@@ -3020,6 +3090,8 @@ class RuntimeEnvironment(_messages.Message):
   Fields:
     bypassTempDirValidation: Whether to bypass the safety checks for the job's
       temporary directory. Use with caution.
+    machineType: The machine type to use for the job. Defaults to the value
+      from the template if not specified.
     maxWorkers: The maximum number of Google Compute Engine instances to be
       made available to your pipeline during execution, from 1 to 1000.
     serviceAccountEmail: The email address of the service account to run the
@@ -3032,10 +3104,11 @@ class RuntimeEnvironment(_messages.Message):
   """
 
   bypassTempDirValidation = _messages.BooleanField(1)
-  maxWorkers = _messages.IntegerField(2, variant=_messages.Variant.INT32)
-  serviceAccountEmail = _messages.StringField(3)
-  tempLocation = _messages.StringField(4)
-  zone = _messages.StringField(5)
+  machineType = _messages.StringField(2)
+  maxWorkers = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  serviceAccountEmail = _messages.StringField(4)
+  tempLocation = _messages.StringField(5)
+  zone = _messages.StringField(6)
 
 
 class SendDebugCaptureRequest(_messages.Message):
@@ -3444,11 +3517,22 @@ class SourceOperationRequest(_messages.Message):
 
   Fields:
     getMetadata: Information about a request to get metadata about a source.
+    name: User-provided name of the Read instruction for this source.
+    originalName: System-defined name for the Read instruction for this source
+      in the original workflow graph.
     split: Information about a request to split a source.
+    stageName: System-defined name of the stage containing the source
+      operation. Unique across the workflow.
+    systemName: System-defined name of the Read instruction for this source.
+      Unique across the workflow.
   """
 
   getMetadata = _messages.MessageField('SourceGetMetadataRequest', 1)
-  split = _messages.MessageField('SourceSplitRequest', 2)
+  name = _messages.StringField(2)
+  originalName = _messages.StringField(3)
+  split = _messages.MessageField('SourceSplitRequest', 4)
+  stageName = _messages.StringField(5)
+  systemName = _messages.StringField(6)
 
 
 class SourceOperationResponse(_messages.Message):
@@ -3702,7 +3786,7 @@ class Status(_messages.Message):
   user-facing error message is needed, put the localized message in the error
   details or localize it in the client. The optional error details may contain
   arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` which can be used for common error
+  detail types in the package `google.rpc` that can be used for common error
   conditions.  # Language mapping  The `Status` message is the logical
   representation of the error model, but it is not necessarily the actual wire
   format. When the `Status` message is exposed in different client libraries
@@ -3715,8 +3799,8 @@ class Status(_messages.Message):
   If a service needs to return partial errors to the client,     it may embed
   the `Status` in the normal response to indicate the partial     errors.  -
   Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting purpose.  - Batch operations. If
-  a client uses batch request and batch response, the     `Status` message
+  have a `Status` message for error reporting.  - Batch operations. If a
+  client uses batch request and batch response, the     `Status` message
   should be used directly inside batch response, one for     each error sub-
   response.  - Asynchronous operations. If an API call embeds asynchronous
   operation     results in its response, the status of those operations should
@@ -3729,7 +3813,7 @@ class Status(_messages.Message):
 
   Fields:
     code: The status code, which should be an enum value of google.rpc.Code.
-    details: A list of messages that carry the error details.  There will be a
+    details: A list of messages that carry the error details.  There is a
       common set of message types for APIs to use.
     message: A developer-facing error message, which should be in English. Any
       user-facing error message should be localized and sent in the
@@ -4096,19 +4180,14 @@ class TemplateMetadata(_messages.Message):
   """Metadata describing a template.
 
   Fields:
-    bypassTempDirValidation: If true, will bypass the validation that the temp
-      directory is writable. This should only be used with templates for
-      pipelines that are guaranteed not to need to write to the temp
-      directory, which is subject to change based on the optimizer.
     description: Optional. A description of the template.
     name: Required. The name of the template.
     parameters: The parameters for the template.
   """
 
-  bypassTempDirValidation = _messages.BooleanField(1)
-  description = _messages.StringField(2)
-  name = _messages.StringField(3)
-  parameters = _messages.MessageField('ParameterMetadata', 4, repeated=True)
+  description = _messages.StringField(1)
+  name = _messages.StringField(2)
+  parameters = _messages.MessageField('ParameterMetadata', 3, repeated=True)
 
 
 class TopologyConfig(_messages.Message):
@@ -4374,6 +4453,8 @@ class WorkItemStatus(_messages.Message):
       progress and proposed_stop_position should be interpreted relative to P,
       and in a potential subsequent dynamic_source_split into {P', R'}, P' and
       R' must be together equivalent to P, etc.
+    totalThrottlerWaitTimeSeconds: Total time the worker spent being throttled
+      by external systems.
     workItemId: Identifies the WorkItem.
   """
 
@@ -4389,7 +4470,8 @@ class WorkItemStatus(_messages.Message):
   sourceFork = _messages.MessageField('SourceFork', 10)
   sourceOperationResponse = _messages.MessageField('SourceOperationResponse', 11)
   stopPosition = _messages.MessageField('Position', 12)
-  workItemId = _messages.StringField(13)
+  totalThrottlerWaitTimeSeconds = _messages.FloatField(13)
+  workItemId = _messages.StringField(14)
 
 
 class WorkerHealthReport(_messages.Message):
@@ -4480,6 +4562,7 @@ class WorkerMessage(_messages.Message):
     workerHealthReport: The health of a worker.
     workerMessageCode: A worker message code.
     workerMetrics: Resource metrics reported by workers.
+    workerShutdownNotice: Shutdown notice by workers.
   """
 
   @encoding.MapUnrecognizedFields('additionalProperties')
@@ -4516,6 +4599,7 @@ class WorkerMessage(_messages.Message):
   workerHealthReport = _messages.MessageField('WorkerHealthReport', 3)
   workerMessageCode = _messages.MessageField('WorkerMessageCode', 4)
   workerMetrics = _messages.MessageField('ResourceUtilizationReport', 5)
+  workerShutdownNotice = _messages.MessageField('WorkerShutdownNotice', 6)
 
 
 class WorkerMessageCode(_messages.Message):
@@ -4612,10 +4696,13 @@ class WorkerMessageResponse(_messages.Message):
       report.
     workerMetricsResponse: Service's response to reporting worker metrics
       (currently empty).
+    workerShutdownNoticeResponse: Service's response to shutdown notice
+      (currently empty).
   """
 
   workerHealthReportResponse = _messages.MessageField('WorkerHealthReportResponse', 1)
   workerMetricsResponse = _messages.MessageField('ResourceUtilizationReportResponse', 2)
+  workerShutdownNoticeResponse = _messages.MessageField('WorkerShutdownNoticeResponse', 3)
 
 
 class WorkerPool(_messages.Message):
@@ -4859,6 +4946,24 @@ class WorkerSettings(_messages.Message):
   shuffleServicePath = _messages.StringField(4)
   tempStoragePrefix = _messages.StringField(5)
   workerId = _messages.StringField(6)
+
+
+class WorkerShutdownNotice(_messages.Message):
+  """Shutdown notification from workers. This is to be sent by the shutdown
+  script of the worker VM so that the backend knows that the VM is being shut
+  down.
+
+  Fields:
+    reason: The reason for the worker shutdown. Current possible values are:
+      "UNKNOWN": shutdown reason is unknown.   "PREEMPTION": shutdown reason
+      is preemption. Other possible reasons may be added in the future.
+  """
+
+  reason = _messages.StringField(1)
+
+
+class WorkerShutdownNoticeResponse(_messages.Message):
+  """Service-side response to WorkerMessage issuing shutdown notice."""
 
 
 class WriteInstruction(_messages.Message):

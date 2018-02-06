@@ -6,7 +6,7 @@ Installing on your own computer: https://cloud.google.com/dataflow/docs/quicksta
 Transforms: https://beam.apache.org/documentation/sdks/javadoc/2.0.0/org/apache/beam/sdk/transforms/package-summary.html
 
 ```
-git clone https://github.com/cloudacademy/beam.git
+git clone https://github.com/rathihimanshu/beam.git
 cd beam/examples/java8
 mvn compile exec:java -Dexec.mainClass=org.apache.beam.examples.MinimalLineCount
 ```
